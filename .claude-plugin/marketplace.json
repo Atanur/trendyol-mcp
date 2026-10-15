@@ -1,0 +1,12 @@
+{
+  "name": "trendyol-wardrobe-market",
+  "description": "Trendyol için kişiselleştirilmiş giyim alışverişi asistanı.",
+  "owner": { "name": "Atanur" },
+  "plugins": [
+    {
+      "name": "trendyol-wardrobe",
+      "source": "./",
+      "description": "Trendyol'da ihtiyacına göre, profiline ve dolabına bakarak kişiselleştirilmiş giyim alışverişi."
+    }
+  ]
+}

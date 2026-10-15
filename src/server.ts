@@ -1,0 +1,46 @@
+import { McpServer } from '@modelcontextprotocol/server';
+import { registerPrompts } from './prompts.js';
+import { registerResources } from './resources.js';
+import { registerSessionTools } from './tools/session.js';
+import { registerTrendyolTools } from './tools/trendyol.js';
+import { registerFindTool } from './tools/find.js';
+import { registerEvaluateTool } from './tools/evaluate.js';
+import { registerProductTools } from './tools/product.js';
+import { registerCartTools } from './tools/cart.js';
+import { registerWatchTools } from './tools/watch.js';
+import { registerSizeWatchTools } from './tools/sizewatch.js';
+import { registerWardrobeTools } from './tools/wardrobe.js';
+import { registerInventoryTools } from './tools/inventory.js';
+import { registerWardrobeIntelTools } from './tools/wardrobe_intel.js';
+import { registerShoppingTools } from './tools/shopping.js';
+import { registerOpsTools } from './tools/ops.js';
+import { registerInfraTools } from './tools/infra.js';
+import { registerOnboardingTools } from './tools/onboarding.js';
+import { registerNeedTools } from './tools/needs.js';
+import { SERVER_INSTRUCTIONS } from './instructions.js';
+
+export function createServer(): McpServer {
+  const server = new McpServer(
+    { name: 'trendyol-mcp', version: '0.4.2' },
+    { capabilities: { tools: {} }, instructions: SERVER_INSTRUCTIONS },
+  );
+  registerOnboardingTools(server);
+  registerNeedTools(server);
+  registerSessionTools(server);
+  registerTrendyolTools(server);
+  registerFindTool(server);
+  registerEvaluateTool(server);
+  registerProductTools(server);
+  registerCartTools(server);
+  registerWatchTools(server);
+  registerSizeWatchTools(server);
+  registerWardrobeTools(server);
+  registerInventoryTools(server);
+  registerWardrobeIntelTools(server);
+  registerShoppingTools(server);
+  registerOpsTools(server);
+  registerInfraTools(server);
+  registerResources(server);
+  registerPrompts(server);
+  return server;
+}

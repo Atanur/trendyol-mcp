@@ -1,0 +1,116 @@
+import { normalize } from '../util.js';
+import type { WardrobeProfile } from './types.js';
+
+export type FlagKod =
+  | 'cinsiyet'
+  | 'slim'
+  | 'yuksek-bel'
+  | 'dar-paca'
+  | 'baski'
+  | 'sentetik-deri'
+  | 'kacinilan-renk'
+  | 'kacinilan-kalip'
+  | 'kumas';
+
+export interface Flag {
+  kod: FlagKod;
+  seviye: 'ciddi' | 'uyari';
+  aciklama: string;
+}
+
+export interface FlagResult {
+  uyarilar: Flag[];
+  olumlu: string[];
+  /** En az bir "ciddi" bayrak varsa true. */
+  elenir: boolean;
+}
+
+/**
+ * Eşleştirme için normalleştirme: küçük harf + "ı"→"i". `toLocaleLowerCase('tr-TR')` büyük "I"'yı "ı" yaptığı
+ * için "SLIM" → "slım" olur ve regex'ler kaçırırdı; hem başlık hem terimler bu fonksiyondan geçer.
+ */
+function norm(value: string): string {
+  return normalize(value).replace(/ı/g, 'i');
+}
+
+/** Boş/boşluk terimleri atar: boş terim her sınırda eşleşip ürünü haksız yere elerdi. */
+function terms(list: string[] | undefined): string[] {
+  return (list ?? []).map(norm).filter(Boolean);
+}
+
+/** Unicode duyarlı tam-kelime eşleşmesi (\b Türkçe harflerde güvenilmez). */
+function hasWord(text: string, words: string[]): boolean {
+  const clean = words.filter(Boolean);
+  if (clean.length === 0) return false;
+  const alternation = clean.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  return new RegExp(`(?<![\\p{L}])(?:${alternation})(?![\\p{L}])`, 'u').test(text);
+}
+
+const SLIM = /slim|skinny|dar kesim|dar fit|body fit/;
+const YUKSEK_BEL = /y[üu]ks[ei]l bel|high ?waist/;
+const DAR_PACA = /dar paça|dar paca|daralan paça|cigarette/;
+const BASKI = /(?<![\p{L}])(baskili|baski|print|yazili|desenli)(?![\p{L}])/u;
+const SUNI_DERI = /suni deri|sentetik deri|faux|deri görünüm|(?<![\p{L}])pu(?![\p{L}])/u;
+
+/** Kullanıcının "kaçındığı" bir kalıp terimini başlıkta aranabilir kalıba çevirir (term zaten norm'lu ve boş değil). */
+function avoidPattern(term: string): RegExp {
+  if (/slim|skinny/.test(term)) return SLIM;
+  if (/y[üu]ksek bel|high/.test(term)) return YUKSEK_BEL;
+  if (/dar pa[çc]a/.test(term)) return DAR_PACA;
+  return new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+}
+
+/**
+ * Ürün BAŞLIĞINDAN deterministik bayraklar çıkarır. Yalnızca kullanıcının kendi
+ * kurallarını/tercihlerini uygular; kural yoksa bayrak üretmez.
+ */
+export function flagProduct(title: string, profile: WardrobeProfile, opts: { gender?: string } = {}): FlagResult {
+  const hay = norm(title);
+  const uyarilar: Flag[] = [];
+  const olumlu: string[] = [];
+  const add = (kod: FlagKod, seviye: Flag['seviye'], aciklama: string): void => {
+    if (!uyarilar.some((f) => f.kod === kod)) uyarilar.push({ kod, seviye, aciklama });
+  };
+  const avoided = terms(profile.kalip?.kacinilan);
+  const avoidsSlim = Boolean(profile.kurallar.slimYok) || avoided.some((a) => /slim|skinny/.test(a));
+
+  // Başlıkta hem kadın hem erkek/unisex geçiyorsa (ör. "Kadın Erkek Unisex") belirsizdir: elenmez.
+  const womenWord = hasWord(hay, ['kadin', 'kiz', 'bayan', 'women', 'woman', 'ladies']);
+  if (opts.gender && norm(opts.gender) === 'erkek' && womenWord && !hasWord(hay, ['erkek', 'unisex'])) {
+    add('cinsiyet', 'ciddi', 'Kadın ürünü görünüyor (Erkek aranıyor).');
+  }
+  if (avoidsSlim && SLIM.test(hay)) add('slim', 'ciddi', 'Slim/dar kesim kalıp: istemediğin kalıp.');
+
+  const highWaistAvoided = avoided.some((a) => /y[üu]ksek bel|high/.test(a));
+  if (YUKSEK_BEL.test(hay)) {
+    if (highWaistAvoided) add('yuksek-bel', 'ciddi', 'Yüksek bel: kaçındığın kalıp.');
+    else if (profile.kalip?.bel && profile.kalip.bel !== 'yuksek') add('yuksek-bel', 'uyari', `Yüksek bel; tercihin ${profile.kalip.bel} bel.`);
+  }
+  if (avoided.some((a) => /dar pa[çc]a/.test(a)) && DAR_PACA.test(hay)) add('dar-paca', 'ciddi', 'Dar paça: kaçındığın kalıp.');
+
+  for (const term of avoided) {
+    if (/slim|skinny|y[üu]ksek bel|high|dar pa[çc]a/.test(term)) continue;
+    if (avoidPattern(term).test(hay)) add('kacinilan-kalip', 'uyari', `Kaçındığın kalıp: ${term}.`);
+  }
+
+  if (profile.kurallar.baskiYok && BASKI.test(hay.replace(/baskisiz|desensiz/g, ''))) {
+    add('baski', 'ciddi', 'Baskılı/desenli ürün: istemediğin tür.');
+  }
+  if (profile.kurallar.sentetikDeriYok && SUNI_DERI.test(hay)) add('sentetik-deri', 'ciddi', 'Suni/sentetik deri istemiyorsun.');
+
+  for (const color of terms(profile.kacinanlar)) {
+    if (hasWord(hay, [color])) add('kacinilan-renk', 'ciddi', `Kaçındığın renk: ${color}.`);
+  }
+  for (const fabric of terms(profile.sevilmeyenKumaslar)) {
+    if (hasWord(hay, [fabric])) add('kumas', 'uyari', `Sevmediğin kumaş: ${fabric}.`);
+  }
+
+  for (const fit of terms(profile.kalip?.sevilen)) {
+    if (hasWord(hay, [fit])) olumlu.push(`Sevdiğin kalıp: ${fit}.`);
+  }
+  for (const fabric of terms(profile.sevilenKumaslar)) {
+    if (hasWord(hay, [fabric])) olumlu.push(`Sevdiğin kumaş: ${fabric}.`);
+  }
+
+  return { uyarilar, olumlu, elenir: uyarilar.some((f) => f.seviye === 'ciddi') };
+}

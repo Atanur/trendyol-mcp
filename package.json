@@ -1,0 +1,33 @@
+{
+  "name": "trendyol-mcp",
+  "version": "0.4.2",
+  "private": true,
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/Atanur/trendyol-mcp.git" },
+  "type": "module",
+  "description": "MCP server that drives a visible Chrome to browse Trendyol by UI elements, filters and finds products.",
+  "bin": {
+    "trendyol-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test test/*.test.ts",
+    "build:form": "node scripts/build-onboarding-form.mjs",
+    "lock:npm": "node scripts/regen-npm-lock.mjs",
+    "inspect": "npx @modelcontextprotocol/inspector node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.3.1",
+    "playwright": "^1.64.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "tsx": "^4.20.0",
+    "typescript": "^6.0.0"
+  },
+  "packageManager": "pnpm@11.20.0"
+}

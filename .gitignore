@@ -1,0 +1,7 @@
+node_modules/
+# dist/ bilerek commit'lenir: plugin kurulumunda derleme adımı çalışmaz.
+*.log
+.DS_Store
+.env
+.chrome-profile/
+.playwright/
