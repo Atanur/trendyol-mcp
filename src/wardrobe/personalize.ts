@@ -1,7 +1,8 @@
 import { normalize, parsePrice } from '../util.js';
-import { flagProduct } from './flags.js';
+import { flagProduct, titleHasTerm } from './flags.js';
 import { needConstraints } from './needs.js';
-import type { BrandFit, Role, WardrobeProfile } from './types.js';
+import { summarizeTaste } from './taste.js';
+import type { BrandFit, Role, WardrobeProfile, ZevkSinyali } from './types.js';
 
 export interface ProductLike {
   title: string;
@@ -27,6 +28,26 @@ export interface PersonalizeCtx {
   rol?: Role;
   butceMax?: number;
   brandFit: BrandFit[];
+  /** Kullanıcının geçmiş beğeni/ret sinyalleri (zevk testi, sohbet). */
+  zevk?: ZevkSinyali[];
+}
+
+/** Zevk sinyallerinden bu başlığa uyan "sık reddedilen" (uyarı) ve "sık beğenilen" (olumlu) notlar. */
+function tasteNotes(title: string, zevk: ZevkSinyali[] | undefined): { uyarilar: string[]; olumlu: string[] } {
+  const notes = { uyarilar: [] as string[], olumlu: [] as string[] };
+  if (!zevk || zevk.length === 0) return notes;
+  const summary = summarizeTaste(zevk);
+  for (const signal of summary.gucluSinyaller) {
+    const tokens = signal.kategori.split(/[-\s]+/).filter(Boolean);
+    if (signal.kategori === 'diğer' || !tokens.some((token) => titleHasTerm(title, token))) continue;
+    if (signal.tur === 'reddediyor') {
+      const count = summary.kategoriler[signal.kategori]?.olmaz ?? 0;
+      notes.uyarilar.push(`Daha önce reddettiğin tür: ${signal.kategori} (${count} kez).`);
+    } else {
+      notes.olumlu.push(`Sık beğendiğin tür: ${signal.kategori}.`);
+    }
+  }
+  return notes;
 }
 
 const BASE_SCORE = 70;
@@ -53,11 +74,13 @@ function sizeHint(product: ProductLike, ctx: PersonalizeCtx): string | undefined
  */
 export function personalizeProduct(product: ProductLike, ctx: PersonalizeCtx): Personal {
   const flags = flagProduct(product.title, ctx.profile, { gender: ctx.gender });
-  const uyarilar = flags.uyarilar.map((f) => f.aciklama);
+  const taste = tasteNotes(product.title, ctx.zevk);
+  const uyarilar = [...flags.uyarilar.map((f) => f.aciklama), ...taste.uyarilar];
+  const olumlu = [...flags.olumlu, ...taste.olumlu];
   let skor = BASE_SCORE;
 
-  skor -= flags.uyarilar.filter((f) => f.seviye === 'uyari').length * PENALTY_WARNING;
-  skor += Math.min(BONUS_CAP, flags.olumlu.length * BONUS_POSITIVE);
+  skor -= (flags.uyarilar.filter((f) => f.seviye === 'uyari').length + taste.uyarilar.length) * PENALTY_WARNING;
+  skor += Math.min(BONUS_CAP, olumlu.length * BONUS_POSITIVE);
 
   let butce: Personal['butce'];
   const price = parsePrice(product.price ?? undefined);
@@ -77,7 +100,7 @@ export function personalizeProduct(product: ProductLike, ctx: PersonalizeCtx): P
   skor = Math.max(0, Math.min(100, skor));
   const karar: Karar = flags.elenir ? 'eleme' : skor >= OK_THRESHOLD && uyarilar.length === 0 ? 'uygun' : 'dikkat';
 
-  return { skor, karar, uyarilar, olumlu: flags.olumlu, butce, bedenOnerisi: sizeHint(product, ctx) };
+  return { skor, karar, uyarilar, olumlu, butce, bedenOnerisi: sizeHint(product, ctx) };
 }
 
 /**

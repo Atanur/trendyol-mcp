@@ -19,7 +19,7 @@ import { registerOnboardingTools } from './tools/onboarding.js';
 import { registerNeedTools } from './tools/needs.js';
 import { SERVER_INSTRUCTIONS } from './instructions.js';
 export function createServer() {
-    const server = new McpServer({ name: 'trendyol-mcp', version: '0.5.1' }, { capabilities: { tools: {} }, instructions: SERVER_INSTRUCTIONS });
+    const server = new McpServer({ name: 'trendyol-mcp', version: '0.5.2' }, { capabilities: { tools: {} }, instructions: SERVER_INSTRUCTIONS });
     registerOnboardingTools(server);
     registerNeedTools(server);
     registerSessionTools(server);

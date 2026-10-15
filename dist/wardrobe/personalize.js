@@ -1,6 +1,27 @@
 import { normalize, parsePrice } from '../util.js';
-import { flagProduct } from './flags.js';
+import { flagProduct, titleHasTerm } from './flags.js';
 import { needConstraints } from './needs.js';
+import { summarizeTaste } from './taste.js';
+/** Zevk sinyallerinden bu başlığa uyan "sık reddedilen" (uyarı) ve "sık beğenilen" (olumlu) notlar. */
+function tasteNotes(title, zevk) {
+    const notes = { uyarilar: [], olumlu: [] };
+    if (!zevk || zevk.length === 0)
+        return notes;
+    const summary = summarizeTaste(zevk);
+    for (const signal of summary.gucluSinyaller) {
+        const tokens = signal.kategori.split(/[-\s]+/).filter(Boolean);
+        if (signal.kategori === 'diğer' || !tokens.some((token) => titleHasTerm(title, token)))
+            continue;
+        if (signal.tur === 'reddediyor') {
+            const count = summary.kategoriler[signal.kategori]?.olmaz ?? 0;
+            notes.uyarilar.push(`Daha önce reddettiğin tür: ${signal.kategori} (${count} kez).`);
+        }
+        else {
+            notes.olumlu.push(`Sık beğendiğin tür: ${signal.kategori}.`);
+        }
+    }
+    return notes;
+}
 const BASE_SCORE = 70;
 const PENALTY_WARNING = 12;
 const PENALTY_OVER_BUDGET = 15;
@@ -24,10 +45,12 @@ function sizeHint(product, ctx) {
  */
 export function personalizeProduct(product, ctx) {
     const flags = flagProduct(product.title, ctx.profile, { gender: ctx.gender });
-    const uyarilar = flags.uyarilar.map((f) => f.aciklama);
+    const taste = tasteNotes(product.title, ctx.zevk);
+    const uyarilar = [...flags.uyarilar.map((f) => f.aciklama), ...taste.uyarilar];
+    const olumlu = [...flags.olumlu, ...taste.olumlu];
     let skor = BASE_SCORE;
-    skor -= flags.uyarilar.filter((f) => f.seviye === 'uyari').length * PENALTY_WARNING;
-    skor += Math.min(BONUS_CAP, flags.olumlu.length * BONUS_POSITIVE);
+    skor -= (flags.uyarilar.filter((f) => f.seviye === 'uyari').length + taste.uyarilar.length) * PENALTY_WARNING;
+    skor += Math.min(BONUS_CAP, olumlu.length * BONUS_POSITIVE);
     let butce;
     const price = parsePrice(product.price ?? undefined);
     if (ctx.butceMax !== undefined && price !== undefined) {
@@ -45,7 +68,7 @@ export function personalizeProduct(product, ctx) {
         skor = Math.min(skor, ELIMINATED_CAP);
     skor = Math.max(0, Math.min(100, skor));
     const karar = flags.elenir ? 'eleme' : skor >= OK_THRESHOLD && uyarilar.length === 0 ? 'uygun' : 'dikkat';
-    return { skor, karar, uyarilar, olumlu: flags.olumlu, butce, bedenOnerisi: sizeHint(product, ctx) };
+    return { skor, karar, uyarilar, olumlu, butce, bedenOnerisi: sizeHint(product, ctx) };
 }
 /**
  * Kararlı bölümleme: elenmeyenler ALAKA SIRASINI koruyarak başta, elenenler (yine kendi sırasıyla) sonda.

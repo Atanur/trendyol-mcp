@@ -5,6 +5,7 @@ import { COLOR_HEX } from '../wardrobe/color.js';
 import { scrapeProducts } from '../trendyol/scrape.js';
 import { applyPriceRange, applySort, openCategory, performSearch, resolveCategory, } from '../trendyol/actions.js';
 import { errorResult, jsonResult, normalize, parsePrice } from '../util.js';
+import { buildFindQuery } from '../wardrobe/findquery.js';
 import { eliminatedLast } from '../wardrobe/personalize.js';
 import { annotatePersonalSafe } from './personal.js';
 const FIT_TERMS = ['slim fit', 'regular fit', 'oversize', 'super slim', 'relaxed', 'skinny', 'straight', 'rahat kesim', 'dar kesim', 'bol kesim'];
@@ -116,8 +117,7 @@ export function registerFindTool(server) {
             const resolvedGender = gender ?? parsed.gender ?? 'Erkek';
             const page = await getPage();
             await openCategory(page, await resolveCategory(page, { gender: resolvedGender }));
-            const queryParts = [parsed.colors[0], parsed.garment, resolvedGender].filter(Boolean);
-            const query = queryParts.join(' ') || description.split(/\s+/).slice(0, 3).join(' ');
+            const query = buildFindQuery(parsed, resolvedGender, description);
             const searched = await performSearch(page, query);
             if (parsed.minPrice !== undefined || parsed.maxPrice !== undefined) {
                 await applyPriceRange(page, parsed.minPrice, parsed.maxPrice);

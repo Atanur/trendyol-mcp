@@ -93,6 +93,19 @@ describe('flagProduct', () => {
     assert.ok(!codes('Kadın Erkek Unisex Tişört', 'Erkek').includes('cinsiyet'));
   });
 
+  it('kısa paça kaçınıyorsa "bilek boy" / crop başlığını işaretler', () => {
+    const p: WardrobeProfile = { ...strict(), kalip: { sevilen: ['regular'], kacinilan: ['kısa paça'], bel: 'orta' } };
+    const kodlar = flagProduct('Erkek Lacivert Likralı Bilek Boy Kumaş Pantolon', p).uyarilar.map((f) => f.kod);
+    assert.ok(kodlar.includes('kacinilan-kalip'));
+    assert.ok(flagProduct('Crop Paça Pantolon', p).uyarilar.some((f) => f.kod === 'kacinilan-kalip'));
+  });
+
+  it('uyarı metni kullanıcının yazdığı özgün terimi gösterir (ı→i değiştirilmiş hâlini değil)', () => {
+    const p: WardrobeProfile = { ...strict(), kalip: { sevilen: ['regular'], kacinilan: ['kısa paça'], bel: 'orta' } };
+    const mesaj = flagProduct('Bilek Boy Pantolon', p).uyarilar[0]!.aciklama;
+    assert.match(mesaj, /kısa paça/);
+  });
+
   it('"sprint" gibi kelimelerin içindeki print baskı sayılmaz', () => {
     assert.ok(!codes('Sprint Koşu Tişörtü').includes('baski'));
   });

@@ -12,6 +12,7 @@ import {
   resolveCategory,
 } from '../trendyol/actions.js';
 import { errorResult, jsonResult, normalize, parsePrice } from '../util.js';
+import { buildFindQuery } from '../wardrobe/findquery.js';
 import { eliminatedLast } from '../wardrobe/personalize.js';
 import type { Role } from '../wardrobe/types.js';
 import { annotatePersonalSafe } from './personal.js';
@@ -147,8 +148,7 @@ export function registerFindTool(server: McpServer): void {
         const page = await getPage();
         await openCategory(page, await resolveCategory(page, { gender: resolvedGender }));
 
-        const queryParts = [parsed.colors[0], parsed.garment, resolvedGender].filter(Boolean);
-        const query = queryParts.join(' ') || description.split(/\s+/).slice(0, 3).join(' ');
+        const query = buildFindQuery(parsed, resolvedGender, description);
         const searched = await performSearch(page, query);
         if (parsed.minPrice !== undefined || parsed.maxPrice !== undefined) {
           await applyPriceRange(page, parsed.minPrice, parsed.maxPrice);

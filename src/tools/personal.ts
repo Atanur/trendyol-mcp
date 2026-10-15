@@ -42,10 +42,10 @@ export async function annotatePersonal<T extends ProductLike>(
   options: PersonalOptions,
 ): Promise<{ products: Array<WithPersonal<T>>; summary: PersonalSummary }> {
   const store = getWardrobe();
-  const [profile, brandFit] = await Promise.all([store.getProfile(), store.listBrandFit()]);
+  const [profile, brandFit, zevk] = await Promise.all([store.getProfile(), store.listBrandFit(), store.listZevk()]);
   const annotated = products.map((product) => ({
     ...product,
-    kisisel: personalizeProduct(product, { profile, brandFit, gender: options.gender, rol: options.rol, butceMax: options.butceMax }),
+    kisisel: personalizeProduct(product, { profile, brandFit, zevk, gender: options.gender, rol: options.rol, butceMax: options.butceMax }),
   }));
   const ozet: Record<Karar, number> = { uygun: 0, dikkat: 0, eleme: 0 };
   for (const row of annotated) ozet[row.kisisel.karar] += 1;

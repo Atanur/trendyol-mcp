@@ -65,6 +65,43 @@ describe('personalizeProduct', () => {
   });
 });
 
+describe('zevk sinyalleri skora girer', () => {
+  const z = (ad: string, kategori: string, tepki: 'begendim' | 'olabilir' | 'olmaz') => ({
+    id: ad,
+    ad,
+    kategori,
+    tepki,
+    etiketler: [],
+    tarih: '2026-10-16',
+  });
+  const reddedilen = [z('Jogger A', 'jogger', 'olmaz'), z('Jogger B', 'jogger', 'olmaz')];
+
+  it('en az 2 kez reddedilen türü uyarır, puanı düşürür ve "dikkat" yapar', () => {
+    const plain = personalizeProduct({ title: 'Erkek Jogger Pantolon', rating: 4.4 }, ctx);
+    const p = personalizeProduct({ title: 'Erkek Jogger Pantolon', rating: 4.4 }, { ...ctx, zevk: reddedilen });
+    assert.ok(p.uyarilar.some((u) => /jogger/i.test(u) && /reddet/i.test(u)));
+    assert.ok(p.skor < plain.skor);
+    assert.equal(p.karar, 'dikkat');
+  });
+
+  it('tek bir "olmaz" yeterli sinyal değildir', () => {
+    const p = personalizeProduct({ title: 'Erkek Jogger Pantolon', rating: 4.4 }, { ...ctx, zevk: [reddedilen[0]!] });
+    assert.ok(!p.uyarilar.some((u) => /reddet/i.test(u)));
+  });
+
+  it('sık beğenilen türü olumlu sinyal olarak ekler', () => {
+    const sevilen = [z('Polo 1', 'polo-triko', 'begendim'), z('Polo 2', 'polo-triko', 'begendim')];
+    const p = personalizeProduct({ title: 'Erkek Polo Yaka Triko Kazak', rating: 4.4 }, { ...ctx, zevk: sevilen });
+    assert.ok(p.olumlu.some((o) => /beğendiğin/i.test(o)));
+  });
+
+  it('zevk verilmezse davranış değişmez', () => {
+    const a = personalizeProduct({ title: 'Erkek Jogger Pantolon' }, ctx);
+    const b = personalizeProduct({ title: 'Erkek Jogger Pantolon' }, { ...ctx, zevk: [] });
+    assert.deepEqual(a, b);
+  });
+});
+
 describe('eliminatedLast', () => {
   const row = (id: string, skor: number, karar: 'uygun' | 'dikkat' | 'eleme') => ({
     id,

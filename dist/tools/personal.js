@@ -16,10 +16,10 @@ export async function annotatePersonalSafe(products, options) {
 /** Ürün listesini kullanıcının profiline göre işaretler; sıralamayı değiştirmez. */
 export async function annotatePersonal(products, options) {
     const store = getWardrobe();
-    const [profile, brandFit] = await Promise.all([store.getProfile(), store.listBrandFit()]);
+    const [profile, brandFit, zevk] = await Promise.all([store.getProfile(), store.listBrandFit(), store.listZevk()]);
     const annotated = products.map((product) => ({
         ...product,
-        kisisel: personalizeProduct(product, { profile, brandFit, gender: options.gender, rol: options.rol, butceMax: options.butceMax }),
+        kisisel: personalizeProduct(product, { profile, brandFit, zevk, gender: options.gender, rol: options.rol, butceMax: options.butceMax }),
     }));
     const ozet = { uygun: 0, dikkat: 0, eleme: 0 };
     for (const row of annotated)
