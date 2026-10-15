@@ -46,9 +46,11 @@ function parseBudget(hay) {
     const tl = hay.match(/(\d[\d.,]*)\s*(?:tl|₺|lira)/);
     return tl?.[1] ? parsePrice(tl[1]) : undefined;
 }
+/** "çok sportif olmasın", "slim olmasın", "mavi istemem": istenmeyenler ihtiyaç olarak okunmasın. */
+const NEGATED = /(?:(?<![\p{L}])çok\s+)?[\p{L}]+\s+(?:olmasın|olmasa|olmamalı|istemiyorum|istemem)/gu;
 /** Serbest cümleden ihtiyacı çıkarır (deterministik, LLM'siz) ve eksikleri/soruları belirler. */
 export function parseNeed(text, opts = {}) {
-    const hay = normalize(text);
+    const hay = normalize(text).replace(NEGATED, ' ');
     let rol = classifyRole(hay);
     if (!rol && /(?<![\p{L}])kot(?![\p{L}])/u.test(hay))
         rol = 'alt';

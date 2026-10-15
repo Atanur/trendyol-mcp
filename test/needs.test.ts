@@ -41,6 +41,18 @@ describe('parseNeed', () => {
     assert.equal(parseNeed('oyun için tişört').kumas, undefined);
   });
 
+  it('olumsuz ifadeler ("çok sportif olmasın", "slim olmasın") vesile/formallik/kalıp sayılmaz', () => {
+    const n = parseNeed('iş ve akşam için rahat bir kot pantolon, çok iddialı olmasın, çok sportif olmasın, slim olmasın');
+    assert.ok(!n.vesile.includes('spor'));
+    assert.notEqual(n.formallik, 'spor');
+    assert.equal(n.kalip, 'relaxed');
+    assert.ok(n.vesile.includes('is') && n.vesile.includes('ozel'));
+  });
+
+  it('olumsuzlanan rengi istenen renk saymaz', () => {
+    assert.equal(parseNeed('mavi olmasın, lacivert gömlek').renk, 'lacivert');
+  });
+
   it('rol bilinmiyorsa eksik listesine koyar ve ilk soru rolü sorar', () => {
     const n = parseNeed('bir şeye ihtiyacım var');
     assert.equal(n.rol, undefined);
