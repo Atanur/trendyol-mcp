@@ -51,7 +51,15 @@ async function call(name, args = {}) {
   const res = await request('tools/call', { name, arguments: args });
   assert.ok(!res.error, `${name}: ${JSON.stringify(res.error)}`);
   const text = res.result.content[0].text;
-  return { isError: Boolean(res.result.isError), json: res.result.isError ? undefined : JSON.parse(text), text };
+  let json;
+  if (!res.result.isError) {
+    try {
+      json = JSON.parse(text);
+    } catch {
+      /* düz metin yanıt (ör. browser_close) */
+    }
+  }
+  return { isError: Boolean(res.result.isError), json, text };
 }
 
 let failed = false;
@@ -68,7 +76,7 @@ try {
   console.log('ok  instructions geldi (' + instructions.length + ' karakter)');
 
   const tools = (await request('tools/list', {})).result.tools.map((t) => t.name);
-  for (const name of ['profile_status', 'onboarding_next', 'profile_import', 'taste_signals', 'profile_set', 'profile_get']) {
+  for (const name of ['profile_status', 'onboarding_next', 'profile_import', 'taste_signals', 'profile_set', 'profile_get', 'session_resume', 'browser_close']) {
     assert.ok(tools.includes(name), `araç eksik: ${name}`);
   }
   console.log('ok  araçlar listede');
@@ -135,6 +143,30 @@ try {
   const listed = (await call('need_list', { durum: 'karar' })).json;
   assert.equal(listed.toplam, 1);
   console.log('ok  need_update ve need_list');
+
+  const withCandidates = (
+    await call('need_update', {
+      id: need.ihtiyac.id,
+      aday_ekle: [
+        { ad: 'HLT Siyah Jean', url: 'https://example.test/a', fiyat: 1091, durum: 'secildi', not: 'tam kalıp' },
+        { ad: 'AC&Co Lacivert Jean', url: 'https://example.test/b', fiyat: 1147 },
+      ],
+    })
+  ).json;
+  assert.equal(withCandidates.ihtiyac.adaylar.length, 2);
+  assert.equal(withCandidates.tarayiciKapatildi, false, 'bitmemiş ihtiyaçta tarayıcı kapatılmamalı');
+
+  const resume = (await call('session_resume')).json;
+  assert.equal(resume.acik.length, 1);
+  assert.match(resume.acik[0].sonrakiAdim, /HLT Siyah Jean/);
+  console.log('ok  aday kaydı ve session_resume ("nerede kalmıştık")');
+
+  const done = (await call('need_update', { id: need.ihtiyac.id, durum: 'alindi' })).json;
+  assert.equal(done.tarayiciKapatildi, true, 'bitince tarayıcı kapatılmalı');
+  assert.equal((await call('session_resume')).json.acik.length, 0);
+  const closed = await call('browser_close');
+  assert.match(closed.text, /kapat/i);
+  console.log('ok  iş bitince tarayıcı kapanır, ihtiyaç açık listesinden düşer, browser_close çalışır');
 } catch (error) {
   failed = true;
   console.error('BAŞARISIZ:', error.message);

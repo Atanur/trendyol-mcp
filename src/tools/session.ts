@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
-import { getPage, getPageByIndex, getPages } from '../browser.js';
+import { closeBrowser, currentMode, getPage, getPageByIndex, getPages } from '../browser.js';
 import { config } from '../config.js';
 import { buildSnapshot, formatSnapshot, refLocator } from '../snapshot.js';
 import { clickByText, firstVisible, settle } from '../dom.js';
@@ -350,6 +350,29 @@ export function registerSessionTools(server: McpServer): void {
         return textResult(`Aktif sekme: ${index} (${page.url()})`);
       } catch (error) {
         return errorResult(`switch_tab başarısız: ${(error as Error).message}`);
+      }
+    },
+  );
+
+  server.registerTool(
+    'browser_close',
+    {
+      title: 'Close the browser when done',
+      description:
+        'İŞ BİTİNCE ÇAĞIR. Trendyol Chrome penceresini ve tüm sekmelerini kapatır; açık sekme birikmesin. Oturum/çerez Chrome profilinde kalır, sonraki araç çağrısı tarayıcıyı yeniden açar. Kullanıcının kendi Chrome\'una bağlıyken (CDP modu) hiçbir şey kapatmaz. Not: need_update(durum=alindi|vazgecildi) bunu kendiliğinden yapar.',
+      inputSchema: z.object({}),
+    },
+    async () => {
+      try {
+        const ownBrowser = currentMode() === 'cdp';
+        await closeBrowser();
+        return textResult(
+          ownBrowser
+            ? 'CDP modu: kullanıcının kendi tarayıcısına dokunulmadı.'
+            : 'Tarayıcı kapatıldı. Oturum profilde duruyor; sonraki işlemde yeniden açılır.',
+        );
+      } catch (error) {
+        return errorResult(`browser_close başarısız: ${(error as Error).message}`);
       }
     },
   );

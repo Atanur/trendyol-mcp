@@ -141,6 +141,18 @@ export interface ZevkSinyali {
 
 export type NeedDurum = 'acik' | 'arastiriliyor' | 'karar' | 'alindi' | 'vazgecildi';
 
+export type AdayDurum = 'inceleniyor' | 'secildi' | 'elendi';
+
+/** Bir ihtiyaç için kısa listeye alınan ürün: oturum kapansa da "nerede kalmıştık" bilinsin. */
+export interface Aday {
+  ad: string;
+  url?: string;
+  fiyat?: number;
+  durum: AdayDurum;
+  not?: string;
+  tarih: string;
+}
+
 /** Kullanıcının asıl ihtiyacı: arama bunun için yapılıyor. */
 export interface Need {
   id: string;
@@ -158,6 +170,8 @@ export interface Need {
   durum: NeedDurum;
   gapId?: string;
   purchaseId?: string;
+  /** Kısa liste: bakılan/seçilen/elenen ürünler. */
+  adaylar?: Aday[];
   olusturma: string;
   guncelleme: string;
 }

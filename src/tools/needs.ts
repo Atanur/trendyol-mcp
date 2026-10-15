@@ -5,7 +5,9 @@ import { ROLE_LABELS, generateGaps, inferFormality } from '../wardrobe/logic.js'
 import { needConstraints, parseNeed, type EksikSlot } from '../wardrobe/needs.js';
 import { profileNote } from '../wardrobe/profile.js';
 import { parseWardrobeLine } from '../wardrobe/quickadd.js';
+import { buildResume, isFinished, mergeAdaylar } from '../wardrobe/resume.js';
 import type { Mekan, Need, NeedDurum, Role } from '../wardrobe/types.js';
+import { closeBrowser } from '../browser.js';
 import { errorResult, jsonResult } from '../util.js';
 
 const ROLE = ['ust', 'alt', 'tekParca', 'katman', 'dis', 'ayakkabi', 'aksesuar'] as const;
@@ -98,7 +100,8 @@ export function registerNeedTools(server: McpServer): void {
     'need_update',
     {
       title: 'Update a need',
-      description: 'İhtiyaç kaydını günceller: kombin notu ekle, durumu değiştir (arastiriliyor/karar/alindi/vazgecildi), eksik alanları tamamla.',
+      description:
+        'İhtiyaç kaydını günceller: kombin notu ekle, kısa listeye aday ekle (aday_ekle), durumu değiştir (arastiriliyor/karar/alindi/vazgecildi), eksik alanları tamamla. durum=alindi veya vazgecildi olunca iş bitmiş sayılır ve Chrome otomatik kapatılır.',
       inputSchema: z.object({
         id: z.string(),
         kombin_ekle: z.array(z.string()).optional(),
@@ -110,12 +113,26 @@ export function registerNeedTools(server: McpServer): void {
         kumas: z.string().optional(),
         butce_max: z.number().optional(),
         purchase_id: z.string().optional(),
+        aday_ekle: z
+          .array(
+            z.object({
+              ad: z.string().trim().min(1),
+              url: z.string().trim().min(1).optional(),
+              fiyat: z.number().nonnegative().optional(),
+              durum: z.enum(['inceleniyor', 'secildi', 'elendi']).optional(),
+              not: z.string().optional(),
+            }),
+          )
+          .optional()
+          .describe('Kısa listeye ürün ekle/güncelle (aynı url/ad tekrar eklenmez). Oturum kapansa da "nerede kalmıştık" bilinsin diye bakılan her aday kaydedilmeli.'),
       }),
     },
-    async ({ id, kombin_ekle, durum, rol, vesile, renk, kalip, kumas, butce_max, purchase_id }) => {
+    async ({ id, kombin_ekle, durum, rol, vesile, renk, kalip, kumas, butce_max, purchase_id, aday_ekle }) => {
       const store = getWardrobe();
       if (!(await store.listNeeds()).some((n) => n.id === id)) return errorResult(`ihtiyaç bulunamadı: ${id}`);
+      const today = new Date().toISOString().slice(0, 10);
       const patchFor = (current: Need): Partial<Need> => ({
+        ...(aday_ekle ? { adaylar: mergeAdaylar(current.adaylar ?? [], aday_ekle, today) } : {}),
         ...(kombin_ekle ? { kombin: [...current.kombin, ...kombin_ekle] } : {}),
         ...(durum ? { durum: durum as NeedDurum } : {}),
         ...(rol ? { rol: rol as Role } : {}),
@@ -127,7 +144,26 @@ export function registerNeedTools(server: McpServer): void {
         ...(purchase_id ? { purchaseId: purchase_id } : {}),
       });
       const updated = await store.updateNeed(id, patchFor);
-      return jsonResult({ ihtiyac: updated, eksik: updated ? missingSlots(updated) : [] });
+      // İş bitti (alındı/vazgeçildi): Chrome açık kalmasın. Başarısızlık güncellemeyi bozmamalı.
+      let tarayiciKapatildi = false;
+      if (updated && isFinished(updated.durum)) {
+        tarayiciKapatildi = await closeBrowser().then(() => true, () => false);
+      }
+      return jsonResult({ ihtiyac: updated, eksik: updated ? missingSlots(updated) : [], tarayiciKapatildi });
+    },
+  );
+
+  server.registerTool(
+    'session_resume',
+    {
+      title: 'Where did we leave off?',
+      description:
+        'OTURUM BAŞINDA (profile_status sonrası) ÇAĞIR. Açık ihtiyaçları, kısa listedeki adayları ve her biri için bir sonraki adımı özetler. Açık ihtiyaç varsa kullanıcıya "geçen sefer X\'te kalmıştık, devam edelim mi?" diye sor; 14 günden eskiyse önce hâlâ geçerli mi diye sor.',
+      inputSchema: z.object({}),
+    },
+    async () => {
+      const needs = await getWardrobe().listNeeds();
+      return jsonResult(buildResume(needs, new Date().toISOString().slice(0, 10)));
     },
   );
 
