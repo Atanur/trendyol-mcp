@@ -1,7 +1,9 @@
 import { normalize } from '../util.js';
+import { COLOR_HEX, isNeutral } from './color.js';
 import type { WardrobeProfile } from './types.js';
 
 export type FlagKod =
+  | 'palet'
   | 'cinsiyet'
   | 'slim'
   | 'yuksek-bel'
@@ -59,6 +61,33 @@ function hasWord(text: string, words: string[]): boolean {
   return new RegExp(`(?<![\\p{L}])(?:${alternation})(?![\\p{L}])`, 'u').test(text);
 }
 
+/** Kök eşleşmesi: "mavi" → "mavisi", "pamuk" → "pamuklu" (tam kelime başlangıcı, sonu serbest). */
+function hasStem(text: string, stem: string): boolean {
+  if (!stem) return false;
+  return new RegExp(`(?<![\\p{L}])${stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\p{L}*`, 'u').test(text);
+}
+
+/** Aynı kalıbı anlatan başlık ifadeleri ("rahat kesim", "comfort fit" → relaxed). Anahtar norm'lu terimdir. */
+const FIT_SYNONYMS: Record<string, string[]> = {
+  relaxed: ['rahat kesim', 'comfort fit', 'loose fit'],
+  regular: ['normal kesim', 'standart kesim'],
+  straight: ['düz paça', 'duz paca'],
+};
+
+/** Kumaş terimlerinde anlam taşımayan sıfatlar: "kaliteli pamuk" → yalnızca "pamuk" aranır. */
+const FABRIC_STOP_WORDS = new Set(['kaliteli', 'iyi', 'yumuşak', 'yumusak', 'sağlam', 'saglam']);
+
+function fabricTokens(term: string): string[] {
+  return term.split(/\s+/).filter((token) => token && !FABRIC_STOP_WORDS.has(token));
+}
+
+/** Tüm anlamlı kumaş kelimeleri başlıkta geçiyor mu? `stem=true` ise "pamuk" → "pamuklu" da sayılır. */
+function fabricMatches(hay: string, term: string, stem: boolean): boolean {
+  const tokens = fabricTokens(term);
+  if (tokens.length === 0) return false;
+  return tokens.every((token) => (stem ? hasStem(hay, token) : hasWord(hay, [token])));
+}
+
 const SLIM = /slim|skinny|dar kesim|dar fit|body fit/;
 const YUKSEK_BEL = /y[üu]ks[ei]l bel|high ?waist/;
 const DAR_PACA = /dar paça|dar paca|daralan paça|cigarette/;
@@ -93,6 +122,14 @@ export function flagProduct(title: string, profile: WardrobeProfile, opts: { gen
   const womenWord = hasWord(hay, ['kadin', 'kiz', 'bayan', 'women', 'woman', 'ladies']);
   if (opts.gender && norm(opts.gender) === 'erkek' && womenWord && !hasWord(hay, ['erkek', 'unisex'])) {
     add('cinsiyet', 'ciddi', 'Kadın ürünü görünüyor (Erkek aranıyor).');
+  } else if (
+    opts.gender &&
+    norm(opts.gender) === 'erkek' &&
+    /(?<![\p{L}])(boyfriend|girlfriend|mom)(?![\p{L}])/u.test(hay) &&
+    !hasWord(hay, ['erkek', 'unisex'])
+  ) {
+    // "Boyfriend/Mom" jean'ler çoğunlukla kadın modelidir ve başlıkta "kadın" yazmaz.
+    add('cinsiyet', 'uyari', 'Kadın modeli olabilir (boyfriend/mom).');
   }
   if (avoidsSlim && SLIM.test(hay)) add('slim', 'ciddi', 'Slim/dar kesim kalıp: istemediğin kalıp.');
 
@@ -117,14 +154,24 @@ export function flagProduct(title: string, profile: WardrobeProfile, opts: { gen
     if (hasWord(hay, [term])) add('kacinilan-renk', 'ciddi', `Kaçındığın renk: ${label}.`);
   }
   for (const { term, label } of labelled(profile.sevilmeyenKumaslar)) {
-    if (hasWord(hay, [term])) add('kumas', 'uyari', `Sevmediğin kumaş: ${label}.`);
+    if (fabricMatches(hay, term, false)) add('kumas', 'uyari', `Sevmediğin kumaş: ${label}.`);
+  }
+
+  // Palet: başlıktaki (nötr olmayan) renklerin hiçbiri paletinde değilse yumuşak uyarı; elemez.
+  const palette = new Set([...terms(profile.palet.baz), ...terms(profile.palet.aksan)]);
+  if (palette.size > 0) {
+    const found = Object.keys(COLOR_HEX).filter((color) => hasStem(hay, norm(color)));
+    const inPalette = found.some((color) => palette.has(norm(color)));
+    const offPalette = found.filter((color) => !isNeutral(color));
+    if (!inPalette && offPalette.length > 0) add('palet', 'uyari', `Palet dışı renk: ${offPalette[0]}.`);
   }
 
   for (const { term, label } of labelled(profile.kalip?.sevilen)) {
-    if (hasWord(hay, [term])) olumlu.push(`Sevdiğin kalıp: ${label}.`);
+    const phrases = [term, ...(FIT_SYNONYMS[term] ?? []).map(norm)];
+    if (hasWord(hay, phrases)) olumlu.push(`Sevdiğin kalıp: ${label}.`);
   }
   for (const { term, label } of labelled(profile.sevilenKumaslar)) {
-    if (hasWord(hay, [term])) olumlu.push(`Sevdiğin kumaş: ${label}.`);
+    if (fabricMatches(hay, term, true)) olumlu.push(`Sevdiğin kumaş: ${label}.`);
   }
 
   return { uyarilar, olumlu, elenir: uyarilar.some((f) => f.seviye === 'ciddi') };

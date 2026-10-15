@@ -106,6 +106,34 @@ describe('flagProduct', () => {
     assert.match(mesaj, /kısa paça/);
   });
 
+  it('palet dışı renk uyarır; paletteki renk, renksiz başlık ve karma renk uyarmaz', () => {
+    const p: WardrobeProfile = { ...strict(), palet: { baz: ['lacivert', 'gri'], aksan: ['bordo'] } };
+    const kodlar = (t: string) => flagProduct(t, p).uyarilar.map((f) => f.kod);
+    assert.ok(kodlar('Erkek Okyanus Mavisi Regular Jean Kot Pantolon').includes('palet'));
+    assert.ok(!kodlar('Erkek Lacivert Jean Kot Pantolon').includes('palet'));
+    assert.ok(!kodlar('Erkek Jean Kot Pantolon').includes('palet'));
+    assert.ok(!kodlar('Erkek Lacivert Mavi Çizgili Gömlek').includes('palet'));
+  });
+
+  it('palet uyarısı elemeye neden olmaz (yalnızca uyarı)', () => {
+    const p: WardrobeProfile = { ...strict(), palet: { baz: ['lacivert'], aksan: [] } };
+    const r = flagProduct('Erkek Buz Mavisi Jean', p);
+    assert.equal(r.elenir, false);
+  });
+
+  it('Erkek aranırken boyfriend/mom modelleri kadın ürünü uyarısı alır; erkek/unisex yazıyorsa almaz', () => {
+    assert.ok(codes('2026 Boyfriend Asit Yıkamalı Kot Pantolon', 'Erkek').includes('cinsiyet'));
+    assert.ok(codes('Mom Fit Kot Pantolon', 'Erkek').includes('cinsiyet'));
+    assert.ok(!codes('Erkek Boyfriend Fit Kot Pantolon', 'Erkek').includes('cinsiyet'));
+  });
+
+  it('"rahat kesim" / "comfort fit" relaxed kalıbı, "pamuklu" ve "kaliteli pamuk" pamuk olarak olumlu sayılır', () => {
+    const p: WardrobeProfile = { ...strict(), kalip: { sevilen: ['relaxed'], kacinilan: [], bel: 'orta' }, sevilenKumaslar: ['kaliteli pamuk'] };
+    const r = flagProduct('Erkek Lacivert Pamuklu Comfort Fit Rahat Kesim Jean', p);
+    assert.ok(r.olumlu.some((o) => /relaxed/i.test(o)));
+    assert.ok(r.olumlu.some((o) => /pamuk/i.test(o)));
+  });
+
   it('"sprint" gibi kelimelerin içindeki print baskı sayılmaz', () => {
     assert.ok(!codes('Sprint Koşu Tişörtü').includes('baski'));
   });
