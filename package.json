@@ -1,6 +1,6 @@
 {
   "name": "trendyol-mcp",
-  "version": "0.4.2",
+  "version": "0.5.1",
   "private": true,
   "license": "MIT",
   "repository": { "type": "git", "url": "git+https://github.com/Atanur/trendyol-mcp.git" },

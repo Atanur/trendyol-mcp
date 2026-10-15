@@ -1,6 +1,6 @@
 {
   "name": "trendyol-wardrobe",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Trendyol'da ihtiyacına göre, profiline ve dolabına bakarak kişiselleştirilmiş giyim alışverişi: onboarding, ihtiyaç analizi, kişisel ürün değerlendirmesi, gardırop ve bütçe zekâsı.",
   "author": { "name": "Atanur" },
   "license": "MIT",
