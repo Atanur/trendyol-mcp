@@ -1,0 +1,44 @@
+---
+import '../styles/global.css';
+
+const TITLE = 'trendyol-mcp: ihtiyacını anlayan Trendyol asistanı';
+const DESCRIPTION =
+  "Trendyol'da ne aradığını değil, neye ihtiyacın olduğunu anlayan Claude asistanı. Seni ve dolabını tanır, aramayı sana göre süzer, almadan önce kontrol eder, nerede kaldığını hatırlar. Verilerin yalnızca senin bilgisayarında.";
+const SHORT = 'Seni ve dolabını tanır, Trendyol aramasını sana göre süzer, almadan önce kontrol eder, nerede kaldığını hatırlar.';
+const canonical = new URL('/', Astro.site).href;
+---
+
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{TITLE}</title>
+    <meta name="description" content={DESCRIPTION} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={TITLE} />
+    <meta property="og:description" content={SHORT} />
+    <meta property="og:url" content={canonical} />
+    <meta name="theme-color" content="#1f3a5f" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <script is:inline>
+      // Kayıtlı tercih yoksa sistem temasını izle; ilk boyamadan önce uygula.
+      try {
+        var saved = localStorage.getItem('theme');
+        var dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.classList.toggle('dark', dark);
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <a
+      href="#icerik"
+      class="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
+    >
+      İçeriğe geç
+    </a>
+    <slot />
+  </body>
+</html>

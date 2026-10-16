@@ -3,6 +3,7 @@ import type { Page } from 'playwright';
 import * as z from 'zod/v4';
 import { getPage } from '../browser.js';
 import { settle } from '../dom.js';
+import { createProgress } from '../progress.js';
 import { CATEGORY_ROLE_HINTS } from '../wardrobe/logic.js';
 import { getStore } from '../store.js';
 import { getReviewInsights } from '../reviewinsights.js';
@@ -40,13 +41,16 @@ export function registerEvaluateTool(server: McpServer): void {
         review_limit: z.number().int().min(5).max(80).optional().describe('Reviews to analyze (default 30).'),
       }),
     },
-    async ({ url, similar_limit, review_limit }) => {
+    async ({ url, similar_limit, review_limit }, ctx) => {
+      const step = createProgress(ctx, 4);
       try {
+        await step('Ürün sayfası açılıyor');
         const page = await getPage();
         await openProduct(page, { url });
         const detail = await page.evaluate(scrapeProductDetail);
 
         // Reviews + authenticity
+        await step('Yorumlar okunuyor, sahte yorum sinyalleri taranıyor');
         await openReviews(page);
         for (let i = 0; i < 3; i += 1) {
           await page.mouse.wheel(0, 1400);
@@ -57,6 +61,7 @@ export function registerEvaluateTool(server: McpServer): void {
         const authenticity = analyzeAuthenticity(reviewSummary.reviews);
 
         // Seller risk
+        await step('Satıcı riski ve indirim kontrol ediliyor');
         const flags: string[] = [];
         if (detail.sellerRating !== undefined && detail.sellerRating < 4) flags.push('Satıcı puanı düşük.');
         if (!detail.returnInfo) flags.push('İade bilgisi yok.');
@@ -76,6 +81,7 @@ export function registerEvaluateTool(server: McpServer): void {
         const history = (watch?.history ?? []).map((h) => h.price);
 
         // Similar alternatives
+        await step('Benzer ürünler aranıyor');
         const term = CATEGORY_ROLE_HINTS.flatMap((h) => h.terms).find((t) =>
           (detail.title ?? '').toLocaleLowerCase('tr-TR').includes(t.toLocaleLowerCase('tr-TR')),
         );

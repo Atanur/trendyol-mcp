@@ -21,6 +21,7 @@ import {
   resolveCategory,
 } from '../trendyol/actions.js';
 import { errorResult, jsonResult, textResult } from '../util.js';
+import { createProgress } from '../progress.js';
 import { annotatePersonalSafe } from './personal.js';
 
 const SORT_KEYS = [
@@ -136,13 +137,16 @@ export function registerTrendyolTools(server: McpServer): void {
       with_insights,
       kisisel,
       rol,
-    }) => {
+    }, ctx) => {
+      const step = createProgress(ctx, 3);
       try {
+        await step('Trendyol açılıyor');
         const page = await getPage();
         const categoryUrl = await resolveCategory(page, { category_url, gender });
         await openCategory(page, categoryUrl);
 
         const steps: Record<string, unknown> = {};
+        await step(query ? `"${query}" aranıyor, filtreler uygulanıyor` : 'Filtreler uygulanıyor');
         if (query) steps.searched = await performSearch(page, query);
 
         const labels = [...(filters ?? [])];
@@ -170,6 +174,7 @@ export function registerTrendyolTools(server: McpServer): void {
 
         if (sort) steps.sortApplied = await applySort(page, sort);
 
+        await step('Ürünler okunuyor');
         const products = await collectProducts(page, {
           pages: pages ?? 1,
           limit: limit ?? 24,

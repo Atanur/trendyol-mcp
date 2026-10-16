@@ -47,14 +47,15 @@ Plugin sürümü `plugin.json`'a sabitli olduğundan **sürüm artmadan kullanı
 
 ## Web sitesi
 
-`site/` klasörü [trendyol-mcp.atanur.dev](https://trendyol-mcp.atanur.dev) adresinin statik kaynağıdır. Cloudflare'e wrangler ile yayınlanır (`wrangler.jsonc`):
+`web/` klasörü [trendyol-mcp.atanur.dev](https://trendyol-mcp.atanur.dev) adresinin kaynağıdır: Astro + React + Tailwind v4 + shadcn/ui, statik çıktı. Cloudflare'e wrangler ile yayınlanır (`wrangler.jsonc`, `web/dist`):
 
 ```bash
-npx wrangler dev        # yerelde önizle
-npx wrangler deploy     # yayınla
+cd web && npm install && npm run dev   # yerelde geliştir
+cd web && npm run build                # web/dist üretir
+npx wrangler deploy                    # yayınla (önce build)
 ```
 
-Site yalnızca düz HTML ve CSS'tir, derleme adımı yoktur.
+Site metinleri `web/src/data/content.ts` içindedir; plugin ve sunucu koduna bağımlı değildir.
 
 ## Pull request kontrol listesi
 

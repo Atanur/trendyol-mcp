@@ -12,6 +12,7 @@ import {
   resolveCategory,
 } from '../trendyol/actions.js';
 import { errorResult, jsonResult, normalize, parsePrice } from '../util.js';
+import { createProgress } from '../progress.js';
 import { buildFindQuery } from '../wardrobe/findquery.js';
 import { eliminatedLast } from '../wardrobe/personalize.js';
 import type { Role } from '../wardrobe/types.js';
@@ -141,20 +142,24 @@ export function registerFindTool(server: McpServer): void {
         sort: z.enum(['relevance', 'best_sellers', 'most_reviewed', 'highest_rating', 'price_asc']).optional(),
       }),
     },
-    async ({ description, gender, limit, sort }) => {
+    async ({ description, gender, limit, sort }, ctx) => {
+      const step = createProgress(ctx, 3);
       try {
         const parsed = parseDescription(description);
         const resolvedGender = gender ?? parsed.gender ?? 'Erkek';
+        await step('Trendyol açılıyor');
         const page = await getPage();
         await openCategory(page, await resolveCategory(page, { gender: resolvedGender }));
 
         const query = buildFindQuery(parsed, resolvedGender, description);
+        await step(`"${query}" aranıyor`);
         const searched = await performSearch(page, query);
         if (parsed.minPrice !== undefined || parsed.maxPrice !== undefined) {
           await applyPriceRange(page, parsed.minPrice, parsed.maxPrice);
         }
         await applySort(page, sort ?? 'relevance');
 
+        await step('Sonuçlar okunuyor ve profiline göre değerlendiriliyor');
         const products = await page.evaluate(scrapeProducts, Math.min(60, (limit ?? 12) * 2));
         const ranked = products
           .map((product) => ({ product, ...score(product, parsed) }))

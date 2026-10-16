@@ -1,5 +1,27 @@
+import { isBackground, requestVisibleBrowser } from './browser.js';
 import { config } from './config.js';
+import { isBlockedPage, isLoginUrl } from './trendyol/guard.js';
 import { delay } from './util.js';
+/**
+ * Gizli (arka plan) çalışırken Trendyol bot-engeli ya da giriş sayfası gösterirse işlem
+ * ilerleyemez. "otomatik" modda bir sonraki denemede pencere görünür açılır; model aynı işlemi tekrarlar.
+ */
+async function assertReachable(page) {
+    if (!isBackground())
+        return; // Görünür pencerede kullanıcı doğrulamayı kendisi çözebilir.
+    const probe = await page
+        .evaluate(() => ({ title: document.title, text: (document.body?.innerText ?? '').slice(0, 1500) }))
+        .catch(() => null);
+    const blocked = probe !== null && isBlockedPage(probe);
+    const needsLogin = isLoginUrl(page.url());
+    if (!blocked && !needsLogin)
+        return;
+    requestVisibleBrowser();
+    const reason = blocked ? 'Trendyol botu engelledi (Cloudflare / insan doğrulaması)' : 'Bu işlem için Trendyol girişi gerekiyor';
+    throw new Error(config.mode === 'otomatik'
+        ? `${reason}. Pencere görünür modda yeniden açılacak: aynı işlemi tekrar dene, gerekirse kullanıcıdan doğrulamayı/girişi tamamlamasını iste.`
+        : `${reason}. Arka plan modunda devam edilemez: browser_show ile pencereyi görünür aç ve kullanıcıdan tamamlamasını iste.`);
+}
 export async function firstVisible(locator) {
     const count = await locator.count().catch(() => 0);
     for (let index = 0; index < count; index += 1) {
@@ -32,6 +54,7 @@ export async function clickByText(page, text, options = {}) {
 export async function settle(page, ms = config.settleMs) {
     await page.waitForLoadState('domcontentloaded', { timeout: config.timeouts.navigationMs }).catch(() => undefined);
     await delay(ms);
+    await assertReachable(page);
 }
 export async function gotoNextPage(page) {
     const candidates = [

@@ -59,7 +59,7 @@ profil kontrolü → ihtiyaç analizi → ara → sana göre değerlendir → de
                 dolap sorusu ("elinde ne var?")                 sepet yalnızca onayınla
 ```
 
-Trendyol'u senin Chrome'unda, **görünür bir pencerede** gezer; ne yaptığını izleyebilir, gerekirse müdahale edebilirsin. Karar mantığı (eleme, uyarılar, skor) modele bırakılmaz, deterministik kurallarla sunucuda hesaplanır. Ayrıntılar: [docs/TOOLS.md](docs/TOOLS.md).
+Trendyol'u senin Chrome'unda **arka planda** gezer, ekranında pencere açılmaz. Cloudflare doğrulaması ya da giriş gerekirse pencereyi görünür açıp seni çağırır. Hep izlemek istersen `TRENDYOL_MODE=gorunur` ayarla. Tarayıcı iş bitince ya da 5 dakika boşta kalınca kendiliğinden kapanır, sekmeler birikmez. Uzun işlemlerde asistan ne yaptığını söyler. Karar mantığı (eleme, uyarılar, skor) modele bırakılmaz, deterministik kurallarla sunucuda hesaplanır. Ayrıntılar: [docs/TOOLS.md](docs/TOOLS.md).
 
 ## Gizlilik ve güvenlik
 

@@ -68,7 +68,9 @@ Kayıtlı yorum analizi `check_against_profile`, `impulse_guard`, `compare_produ
 
 ## Düşük seviye tarayıcı araçları
 
-`browser_navigate`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_press`, `browser_select_option`, `browser_scroll`, `browser_screenshot`, `browser_wait`, `browser_history`, `browser_list_tabs`, `browser_switch_tab` ve **`browser_close`** (iş bitince Chrome penceresini ve sekmelerini kapatır; oturum profilde kalır, sonraki işlemde tarayıcı yeniden açılır; kendi Chrome'una bağlıyken (CDP) hiçbir şey kapatmaz). Trendyol arayüzü değişirse bunlarla elle konumlanılabilir: `browser_navigate → browser_snapshot → browser_click(e12) → browser_type → …`
+`browser_navigate`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_press`, `browser_select_option`, `browser_scroll`, `browser_screenshot`, `browser_wait`, `browser_history`, `browser_list_tabs`, `browser_switch_tab` **`browser_close`** (iş bitince Chrome'u kapatır; oturum profilde kalır, sonraki işlemde yeniden açılır) ve **`browser_show`** (tarayıcıyı görünür pencerede açar: giriş, doğrulama ya da izlemek için).
+
+Tarayıcı varsayılan olarak **arka planda** çalışır ve **boşta kaldığında kendiliğinden kapanır** (`TRENDYOL_MODE`, `TRENDYOL_IDLE_CLOSE_MS`, bkz. [MANUAL-SETUP](MANUAL-SETUP.md#yapılandırma)). Ürün bağlantıları yeni sekmede açıldığında eski sekmeler otomatik kapatılır. Kendi Chrome'una (CDP) bağlıyken hiçbir şey kapatılmaz. Uzun araçlar (`trendyol_find`, `trendyol_search_products`, `trendyol_evaluate_product`) "şu an ne yapıyor" bilgisini MCP ilerleme bildirimiyle gönderir. Trendyol arayüzü değişirse bunlarla elle konumlanılabilir: `browser_navigate → browser_snapshot → browser_click(e12) → browser_type → …`
 
 ## Prompt'lar ve kaynaklar
 

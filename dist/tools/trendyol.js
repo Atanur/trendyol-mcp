@@ -9,6 +9,7 @@ import { getReviewInsights } from '../reviewinsights.js';
 import { parsePrice, productKey } from '../util.js';
 import { applyFilters, applyPriceRange, applySort, collectPages, loadMore, openCategory, openProduct, performSearch, prepareFilters, resolveCategory, } from '../trendyol/actions.js';
 import { errorResult, jsonResult, textResult } from '../util.js';
+import { createProgress } from '../progress.js';
 import { annotatePersonalSafe } from './personal.js';
 const SORT_KEYS = [
     'best_sellers',
@@ -88,12 +89,15 @@ export function registerTrendyolTools(server) {
                 .describe('Sonuçları kullanıcının profiline göre işaretle (varsayılan true): her ürüne kisisel = {skor, karar uygun/dikkat/eleme, uyarilar, bedenOnerisi} eklenir. Sıralama değişmez.'),
             rol: z.enum(['ust', 'alt', 'tekParca', 'katman', 'dis', 'ayakkabi', 'aksesuar']).optional().describe('Beden önerisi için aranan parçanın rolü.'),
         }),
-    }, async ({ query, category_url, filters, gender, price_min, price_max, sort, quick_filters, expand_filters, pages, limit, open_first, scroll_rounds, with_insights, kisisel, rol, }) => {
+    }, async ({ query, category_url, filters, gender, price_min, price_max, sort, quick_filters, expand_filters, pages, limit, open_first, scroll_rounds, with_insights, kisisel, rol, }, ctx) => {
+        const step = createProgress(ctx, 3);
         try {
+            await step('Trendyol açılıyor');
             const page = await getPage();
             const categoryUrl = await resolveCategory(page, { category_url, gender });
             await openCategory(page, categoryUrl);
             const steps = {};
+            await step(query ? `"${query}" aranıyor, filtreler uygulanıyor` : 'Filtreler uygulanıyor');
             if (query)
                 steps.searched = await performSearch(page, query);
             const labels = [...(filters ?? [])];
@@ -120,6 +124,7 @@ export function registerTrendyolTools(server) {
             }
             if (sort)
                 steps.sortApplied = await applySort(page, sort);
+            await step('Ürünler okunuyor');
             const products = await collectProducts(page, {
                 pages: pages ?? 1,
                 limit: limit ?? 24,

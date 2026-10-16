@@ -6,3 +6,5 @@ node_modules/
 .chrome-profile/
 .playwright/
 .wrangler/
+web/dist/
+web/.astro/

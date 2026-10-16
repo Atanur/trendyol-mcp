@@ -21,7 +21,7 @@ import { SERVER_INSTRUCTIONS } from './instructions.js';
 
 export function createServer(): McpServer {
   const server = new McpServer(
-    { name: 'trendyol-mcp', version: '0.6.0' },
+    { name: 'trendyol-mcp', version: '0.6.1' },
     { capabilities: { tools: {} }, instructions: SERVER_INSTRUCTIONS },
   );
   registerOnboardingTools(server);

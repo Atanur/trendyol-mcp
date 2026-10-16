@@ -1,6 +1,7 @@
 import * as z from 'zod/v4';
 import { getPage } from '../browser.js';
 import { settle } from '../dom.js';
+import { createProgress } from '../progress.js';
 import { CATEGORY_ROLE_HINTS } from '../wardrobe/logic.js';
 import { getStore } from '../store.js';
 import { getReviewInsights } from '../reviewinsights.js';
@@ -32,12 +33,15 @@ export function registerEvaluateTool(server) {
             similar_limit: z.number().int().min(0).max(10).optional().describe('How many similar alternatives to include (default 4).'),
             review_limit: z.number().int().min(5).max(80).optional().describe('Reviews to analyze (default 30).'),
         }),
-    }, async ({ url, similar_limit, review_limit }) => {
+    }, async ({ url, similar_limit, review_limit }, ctx) => {
+        const step = createProgress(ctx, 4);
         try {
+            await step('Ürün sayfası açılıyor');
             const page = await getPage();
             await openProduct(page, { url });
             const detail = await page.evaluate(scrapeProductDetail);
             // Reviews + authenticity
+            await step('Yorumlar okunuyor, sahte yorum sinyalleri taranıyor');
             await openReviews(page);
             for (let i = 0; i < 3; i += 1) {
                 await page.mouse.wheel(0, 1400);
@@ -47,6 +51,7 @@ export function registerEvaluateTool(server) {
             const lens = analyzeLens(reviewSummary.reviews);
             const authenticity = analyzeAuthenticity(reviewSummary.reviews);
             // Seller risk
+            await step('Satıcı riski ve indirim kontrol ediliyor');
             const flags = [];
             if (detail.sellerRating !== undefined && detail.sellerRating < 4)
                 flags.push('Satıcı puanı düşük.');
@@ -72,6 +77,7 @@ export function registerEvaluateTool(server) {
             const watch = await getStore().get(detail.url);
             const history = (watch?.history ?? []).map((h) => h.price);
             // Similar alternatives
+            await step('Benzer ürünler aranıyor');
             const term = CATEGORY_ROLE_HINTS.flatMap((h) => h.terms).find((t) => (detail.title ?? '').toLocaleLowerCase('tr-TR').includes(t.toLocaleLowerCase('tr-TR')));
             const gender = /kadın|kadin/.test((detail.title ?? '').toLowerCase()) ? 'kadın' : 'erkek';
             const query = `${detail.brand ?? ''} ${term ?? ''} ${gender}`.replace(/\s+/g, ' ').trim();

@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
-import { closeBrowser, currentMode, getPage, getPageByIndex, getPages } from '../browser.js';
+import { closeBrowser, currentMode, getPage, getPageByIndex, getPages, showBrowser } from '../browser.js';
 import { config } from '../config.js';
 import { buildSnapshot, formatSnapshot, refLocator } from '../snapshot.js';
 import { clickByText, firstVisible, settle } from '../dom.js';
@@ -350,6 +350,24 @@ export function registerSessionTools(server: McpServer): void {
         return textResult(`Aktif sekme: ${index} (${page.url()})`);
       } catch (error) {
         return errorResult(`switch_tab başarısız: ${(error as Error).message}`);
+      }
+    },
+  );
+
+  server.registerTool(
+    'browser_show',
+    {
+      title: 'Show the browser window',
+      description:
+        'Tarayıcıyı GÖRÜNÜR pencerede yeniden açar. Arka planda çalışırken Trendyol botu engellediğinde, giriş (üyelik) gerektiğinde ya da kullanıcı izlemek istediğinde çağır. Açık sayfa kapanır; ardından işlemi yeniden başlat ve kullanıcıdan doğrulamayı/girişi tamamlamasını iste.',
+      inputSchema: z.object({}),
+    },
+    async () => {
+      try {
+        await showBrowser();
+        return textResult('Tarayıcı görünür pencerede açıldı. Doğrulama/giriş tamamlanınca işlemi yeniden başlat.');
+      } catch (error) {
+        return errorResult(`browser_show başarısız: ${(error as Error).message}`);
       }
     },
   );

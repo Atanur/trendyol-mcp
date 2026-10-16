@@ -1,9 +1,9 @@
 {
-  // trendyol-mcp.atanur.dev: yalnızca statik varlıklar (site/), Worker kodu yok.
+  // trendyol-mcp.atanur.dev: yalnızca statik varlıklar (web/dist, Astro çıktısı), Worker kodu yok.
   "name": "trendyol-mcp",
   "compatibility_date": "2026-10-15",
   "assets": {
-    "directory": "./site"
+    "directory": "./web/dist"
   },
   // Yalnızca özel alan adı; hesap adını içeren *.workers.dev adresi açılmaz.
   "workers_dev": false,

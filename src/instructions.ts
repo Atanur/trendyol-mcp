@@ -19,4 +19,6 @@ export const SERVER_INSTRUCTIONS = [
   '- Boy/kilo gibi hassas bilgiler isteğe bağlıdır; sorarken yerelde kaldığını söyle.',
   '- Bir araç “varsayilanKullanilan” bildirirse, varsayılan değerle çalıştığını kullanıcıya belirt.',
   '- Dürtüsel alımı teşvik etme; ihtiyaç ve dolap boşluğu önce gelir.',
+  '- Uzun işlemlerden (trendyol_find, trendyol_search_products, trendyol_evaluate_product: 10-60 sn sürebilir) ÖNCE kullanıcıya tek satırla ne yapacağını söyle, ör. “Ürünün yorumlarını ve satıcısını inceliyorum, yarım dakika kadar sürebilir.” Araç ilerleme bildirimi de gönderebilir.',
+  '- Tarayıcı varsayılan olarak arka planda (görünmez) çalışır. Araç “botu engelledi” ya da “giriş gerekiyor” hatası verirse pencere görünür açılır: aynı işlemi tekrar dene, gerekirse kullanıcıdan doğrulamayı/girişi tamamlamasını iste (browser_show ile de açabilirsin). Boşta kalan tarayıcı kendiliğinden kapanır.',
 ].join('\n');

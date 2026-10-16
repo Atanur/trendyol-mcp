@@ -62,7 +62,8 @@ Hepsi isteğe bağlıdır; ortam değişkeni olarak verilir ([`.env.example`](..
 | `TRENDYOL_DATA_DIR` | `~/.trendyol-mcp/data` | Profil, envanter, fiyat geçmişi ve takip listelerinin tutulduğu klasör |
 | `TRENDYOL_PROFILE_DIR` | `~/.trendyol-mcp/chrome-profile` | Kalıcı Chrome profili (çerez ve oturum burada) |
 | `TRENDYOL_CHANNEL` | `chrome` | Tarayıcı kanalı: `chrome`, `chrome-canary`, `msedge`, `chromium` |
-| `TRENDYOL_HEADLESS` | `false` | `true` yaparsan pencere gizlenir (izleyemezsin) |
+| `TRENDYOL_MODE` | `otomatik` | `otomatik`: arka planda (görünmez) çalışır, Cloudflare engeli ya da giriş gerekirse pencereyi görünür açar. `arka-plan`: hep gizli (engel olursa hata verir). `gorunur`: hep görünür pencere, izleyebilirsin. Eski `TRENDYOL_HEADLESS=true` = `arka-plan` |
+| `TRENDYOL_IDLE_CLOSE_MS` | `300000` | Son araç çağrısından bu kadar ms sonra tarayıcı kendiliğinden kapanır (`0` = kapatma). Giriş sayfasındayken kapanmaz, kendi Chrome'una (CDP) bağlıyken hiç kapatmaz |
 | `TRENDYOL_ENABLE_CART` | `true` | `false` yaparsan sepete ekleme aracı kapanır |
 | `TRENDYOL_CDP_ENDPOINT` | boş | Doluysa kendi Chrome'unu açmak yerine bu CDP ucuna bağlanır |
 | `TRENDYOL_BASE_URL` | `https://www.trendyol.com` | Site kökü. Kategori URL'leri sabit değildir, arayüzden keşfedilir |

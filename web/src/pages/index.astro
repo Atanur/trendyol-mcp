@@ -1,0 +1,124 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header';
+import HeroStage from '../components/HeroStage';
+import CopyCommand from '../components/CopyCommand';
+import InstallTabs from '../components/InstallTabs';
+import Faq from '../components/Faq';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { FEATURES, MARKETPLACE_CMD, PRIVACY, REPO, STEPS } from '../data/content';
+---
+
+<Layout>
+  <Header client:load />
+
+  <main id="icerik">
+    <section class="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:py-20">
+      <div class="min-w-0">
+        <Badge variant="secondary" class="mb-5 font-mono">Claude Code plugin'i · MCP sunucusu · MIT</Badge>
+        <h1 class="text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
+          Trendyol'da ne aradığını değil, <em class="text-primary">neye ihtiyacın olduğunu</em> anlayan asistan.
+        </h1>
+        <p class="mt-5 max-w-xl text-lg text-muted-foreground">
+          Seni ve dolabını tanır, aramayı sana göre süzer, almadan önce yorumları, satıcıyı ve indirimi kontrol eder. Nerede kaldığını hatırlar, işi bitince sekmeyi kapatır.
+        </p>
+        <div class="mt-7 grid max-w-xl gap-3">
+          <CopyCommand client:load command={MARKETPLACE_CMD} />
+          <div class="flex flex-wrap gap-2">
+            <Button size="lg" render={<a href="#kurulum" />}>Kurulum adımları</Button>
+            <Button size="lg" variant="outline" render={<a href={REPO} />}>GitHub'da incele</Button>
+          </div>
+        </div>
+      </div>
+
+      <HeroStage client:load />
+    </section>
+
+    <section id="nasil" class="border-y bg-secondary/60">
+      <div class="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+        <h2 class="text-3xl font-bold tracking-tight">Önce seni tanır, sonra arar</h2>
+        <ol class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map((step, i) => (
+            <li>
+              <Card class="h-full">
+                <CardHeader>
+                  <span class="mb-1 grid size-8 place-items-center rounded-full bg-primary font-mono text-sm font-bold text-primary-foreground">{i + 1}</span>
+                  <CardTitle class="text-lg">{step.title}</CardTitle>
+                </CardHeader>
+                <CardContent class="text-sm text-muted-foreground">{step.text}</CardContent>
+              </Card>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <section id="ozellikler" class="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+      <h2 class="text-3xl font-bold tracking-tight">Tüm özellikler</h2>
+      <p class="mt-2 max-w-2xl text-muted-foreground">
+        Eleme ve uyarılar modele bırakılmaz; sunucuda kurallarla hesaplanır ve testlerle doğrulanır.
+      </p>
+      <div class="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {FEATURES.map((group, i) => (
+          <Card class={group.wide ? 'md:col-span-2 lg:col-span-3' : ''}>
+            <CardHeader>
+              <CardTitle class="flex items-center gap-3 text-lg">
+                <Badge variant="outline" class="font-mono">{String(i + 1).padStart(2, '0')}</Badge>
+                {group.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul class={`grid gap-2 text-sm ${group.wide ? 'md:grid-cols-2' : ''}`}>
+                {group.items.map((item) => (
+                  <li class="relative pl-4 text-muted-foreground before:absolute before:left-0 before:top-[0.55em] before:size-1.5 before:rounded-full before:bg-primary before:content-['']">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </section>
+
+    <section id="gizlilik" class="bg-primary text-primary-foreground">
+      <div class="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+        <h2 class="text-3xl font-bold tracking-tight">Verilerin senin bilgisayarında kalır</h2>
+        <div class="mt-8 grid gap-8 md:grid-cols-3">
+          {PRIVACY.map((item) => (
+            <div>
+              <h3 class="text-xl font-bold">{item.title}</h3>
+              <p class="mt-2 text-sm opacity-85">{item.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section id="kurulum" class="mx-auto max-w-3xl px-4 py-14 sm:px-6">
+      <h2 class="text-3xl font-bold tracking-tight">Kurulum</h2>
+      <p class="mt-2 mb-6 text-muted-foreground">
+        Gereksinimler: <a class="underline underline-offset-4" href="https://code.claude.com">Claude Code</a>, Google Chrome ve Node.js 20+.
+      </p>
+      <InstallTabs client:load />
+    </section>
+
+    <section class="mx-auto max-w-3xl px-4 pb-16 sm:px-6">
+      <h2 class="mb-4 text-3xl font-bold tracking-tight">Sık sorulanlar</h2>
+      <Faq client:load />
+    </section>
+  </main>
+
+  <footer class="border-t">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-sm text-muted-foreground sm:px-6">
+      <p>MIT lisanslı · Trendyol ile bağlantılı değildir.</p>
+      <p>
+        <a class="underline underline-offset-4" href={REPO}>GitHub</a> ·
+        <a class="underline underline-offset-4" href={`${REPO}/issues`}>Sorun bildir</a> ·
+        <a class="underline underline-offset-4" href={`${REPO}/blob/main/docs/TOOLS.md`}>Araçlar</a>
+      </p>
+    </div>
+  </footer>
+</Layout>
